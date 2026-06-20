@@ -64,6 +64,66 @@ export function welcomeApp() {
     return { title: 'Welcome', el };
 }
 
+// Embedded YouTube player. The window face is real DOM (CSS3D), so the player
+// is a normal <iframe>; a URL/ID bar lets you load any video. This is the
+// template for future embedded apps (browser, maps, …).
+export function youtubeApp() {
+    const el = document.createElement('div');
+    el.className = 'app-youtube';
+    el.innerHTML = `
+        <div class="yt-bar">
+            <input class="yt-input" type="text" placeholder="Paste a YouTube link or video ID…" spellcheck="false">
+            <button class="yt-load" type="button">Load</button>
+        </div>
+        <div class="yt-stage">
+            <iframe class="yt-frame"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+        </div>
+    `;
+
+    const input = el.querySelector('.yt-input');
+    const frame = el.querySelector('.yt-frame');
+
+    // Pull an 11-char video id out of a full URL or accept a bare id.
+    const parseId = (raw) => {
+        const text = raw.trim();
+        const m = text.match(/(?:youtu\.be\/|v=|\/embed\/)([\w-]{11})/);
+        if (m) return m[1];
+        if (/^[\w-]{11}$/.test(text)) return text;
+        return null;
+    };
+
+    // Only the /embed/ form is frameable (watch pages send X-Frame-Options).
+    const load = (id) => {
+        frame.src = `https://www.youtube.com/embed/${id}`;
+    };
+
+    const submit = () => {
+        const id = parseId(input.value);
+        if (id) {
+            input.classList.remove('yt-error');
+            load(id);
+        } else {
+            input.classList.add('yt-error');
+        }
+    };
+
+    el.querySelector('.yt-load').addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submit();
+        input.classList.remove('yt-error');
+    });
+
+    // Start on a stable, neutral default — YouTube's first-ever video.
+    const DEFAULT_ID = 'jNQXAC9IVRw';
+    input.value = DEFAULT_ID;
+    load(DEFAULT_ID);
+
+    return { title: 'YouTube', el };
+}
+
 // Default back face for windows launched from the Start menu (single app).
 export function systemPanel(appName) {
     const el = document.createElement('div');
@@ -84,6 +144,7 @@ export function systemPanel(appName) {
 
 // Apps offered in the Start menu. `make` builds a fresh instance per launch.
 export const APP_REGISTRY = [
+    { name: 'YouTube', icon: '📺', make: youtubeApp },
     { name: 'Notepad', icon: '📝', make: notepadApp },
     { name: 'Clock', icon: '🕐', make: clockApp },
     { name: 'About 3D-OS', icon: 'ℹ️', make: aboutApp },

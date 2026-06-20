@@ -3,7 +3,7 @@ import { CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
 import { createTaskbar } from './taskbar.js';
 import { createDragManager } from './dragManager.js';
 import { createWindow } from './windows.js';
-import { notepadApp, aboutApp, clockApp, welcomeApp, systemPanel, APP_REGISTRY } from './apps.js';
+import { notepadApp, aboutApp, welcomeApp, youtubeApp, APP_REGISTRY } from './apps.js';
 
 // ---------------------------------------------------------------------------
 // 3D-OS bootstrap: a large, black-outlined volume you can free-fly inside of.
@@ -35,7 +35,13 @@ document.body.appendChild(cssRenderer.domElement);
 
 // --- Scene -----------------------------------------------------------------
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f4); // light bg so black edges read clearly
+scene.background = new THREE.Color(0xf0f0f4); // shown until the skybox texture below finishes loading
+
+new THREE.TextureLoader().load('./skybox.png', (texture) => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    scene.background = texture;
+});
 
 // --- Camera (starts inside the volume) -------------------------------------
 const camera = new THREE.PerspectiveCamera(
@@ -103,35 +109,41 @@ markerPositions.forEach((p, i) => {
 // One drag manager drives window move/rotate AND taskbar rotate.
 const dragManager = createDragManager(camera);
 
+// Taskbar: rotatable (not draggable); Start opens the two-column app picker.
+const taskbar = createTaskbar({ apps: APP_REGISTRY, onLaunch: launchApp, dragManager });
+scene.add(taskbar.object);
+
+// Per-window "rotate" actions (cube icon menu), shared by every window.
+const windowActions = {
+    faceMe: () => camera.quaternion,
+    matchTaskbar: () => taskbar.object.quaternion
+};
+
+// Open a couple of windows on the desktop to start.
+function spawnWindow(front, back, position) {
+    const win = createWindow({ front, back, dragManager, position, actions: windowActions });
+    scene.add(win.object);
+    return win;
+}
+spawnWindow(notepadApp(), aboutApp(), [-22, 6, 5]);
+spawnWindow(youtubeApp(), welcomeApp(), [22, 6, -5]);
+
 // Spawn a window a short distance ahead of the camera, facing the user.
 const _forward = new THREE.Vector3();
 function spawnInFront(front, back) {
     camera.getWorldDirection(_forward);
     const pos = camera.position.clone().addScaledVector(_forward, 34);
-    const win = createWindow({ front, back, dragManager, position: pos.toArray() });
+    const win = createWindow({ front, back, dragManager, position: pos.toArray(), actions: windowActions });
     win.object.quaternion.copy(camera.quaternion); // face the user, match roll
     scene.add(win.object);
     return win;
 }
 
-// Launch an app from the Start menu: chosen app on the front, a system panel
-// on the back (every window is two-sided).
-function launchApp(entry) {
-    spawnInFront(entry.make(), systemPanel(entry.name));
+// Launch from the Start menu: the chosen Front/Back apps go on the window's
+// two faces (picked via the taskbar's two-column app picker).
+function launchApp({ front, back }) {
+    spawnInFront(front.make(), back.make());
 }
-
-// Taskbar: rotatable (not draggable); Start opens the app list.
-const taskbar = createTaskbar({ apps: APP_REGISTRY, onLaunch: launchApp, dragManager });
-scene.add(taskbar.object);
-
-// Open a couple of windows on the desktop to start.
-function spawnWindow(front, back, position) {
-    const win = createWindow({ front, back, dragManager, position });
-    scene.add(win.object);
-    return win;
-}
-spawnWindow(notepadApp(), aboutApp(), [-22, 6, 5]);
-spawnWindow(clockApp(), welcomeApp(), [22, 6, -5]);
 
 // --- Input: track held keys by physical code (layout-independent) ----------
 const pressed = new Set();

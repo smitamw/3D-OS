@@ -203,16 +203,19 @@
 
         /* -------------------------------------------------------------------
            Start menu (a popover anchored above the Start button, in the
-           taskbar's own CSS3D plane so it rotates with the bar).
+           taskbar's own CSS3D plane so it rotates with the bar). Two columns
+           — Front / Back — let you pick one app each, then Launch spawns a
+           window with those two apps on its two faces.
            ------------------------------------------------------------------- */
         .start-menu {
             position: absolute;
             left: 8px;
             bottom: calc(100% + 14px);
-            width: 340px;
-            max-height: 440px;
+            width: 460px;
+            max-height: 480px;
             display: none;
             flex-direction: column;
+            gap: 10px;
             padding: 12px;
             background: rgba(40, 42, 52, 0.92);
             backdrop-filter: blur(22px) saturate(140%);
@@ -228,7 +231,24 @@
             display: flex;
         }
 
-        .start-menu-header {
+        .start-columns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .start-col {
+            flex: 1 1 50%;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .start-col + .start-col {
+            border-left: 1px solid rgba(255, 255, 255, 0.10);
+            padding-left: 10px;
+        }
+
+        .start-col-header {
             padding: 4px 8px 10px;
             font-size: 11px;
             font-weight: 600;
@@ -237,24 +257,25 @@
             opacity: 0.55;
         }
 
-        .start-menu-list {
+        .start-col-list {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            max-height: 360px;
             overflow: auto;
         }
 
         .start-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
+            gap: 10px;
+            padding: 10px 10px;
             border: 0;
             border-radius: 8px;
             background: transparent;
             color: #fff;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 13.5px;
             text-align: left;
             cursor: pointer;
             transition: background 0.12s ease;
@@ -263,13 +284,47 @@
         .start-item:hover { background: rgba(255, 255, 255, 0.10); }
         .start-item:active { background: rgba(255, 255, 255, 0.18); }
 
+        .start-item.selected {
+            background: rgba(0, 120, 212, 0.45);
+            box-shadow: inset 0 0 0 1px rgba(0, 170, 255, 0.7);
+        }
+
         .start-item-icon {
-            width: 26px;
-            font-size: 20px;
+            width: 22px;
+            font-size: 18px;
             text-align: center;
         }
 
-        .start-item-name { font-weight: 500; }
+        .start-item-name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .start-launch {
+            flex: 0 0 auto;
+            padding: 11px 0;
+            border: 0;
+            border-radius: 8px;
+            background: #0078d4;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+
+        .start-launch:hover:not(:disabled) { background: #1387e8; }
+        .start-launch:active:not(:disabled) { background: #006bbd; }
+
+        .start-launch:disabled {
+            background: rgba(255, 255, 255, 0.10);
+            color: rgba(255, 255, 255, 0.4);
+            cursor: default;
+        }
 
         /* -------------------------------------------------------------------
            Two-sided draggable windows (each face is a CSS3DObject).
@@ -300,8 +355,8 @@
             flex: 0 0 40px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            /* inset so the title text & close button clear the corner handles */
+            gap: 8px;
+            /* inset so the title text & buttons clear the corner handles */
             padding: 0 30px;
             background: linear-gradient(#fbfbfb, #eef0f2);
             border-bottom: 1px solid rgba(0, 0, 0, 0.08);
@@ -312,6 +367,7 @@
         body.dragging .win-titlebar { cursor: grabbing; }
 
         .win-title {
+            flex: 1 1 auto;
             font-size: 13px;
             font-weight: 600;
             white-space: nowrap;
@@ -319,22 +375,67 @@
             text-overflow: ellipsis;
         }
 
+        .win-cube,
         .win-close {
             flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 28px;
             height: 26px;
             border: 0;
             border-radius: 6px;
             background: transparent;
             color: #1a1a1a;
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
         }
+
+        .win-cube svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .win-cube:hover { background: rgba(0, 120, 212, 0.15); }
+        .win-cube.open { background: rgba(0, 120, 212, 0.25); }
 
         .win-close:hover {
             background: #e81123;
             color: #fff;
         }
+
+        /* Cube icon's "rotate" actions dropdown. */
+        .win-actions-menu {
+            position: absolute;
+            z-index: 5;
+            top: 40px;
+            left: 6px;
+            width: 220px;
+            display: none;
+            flex-direction: column;
+            padding: 6px;
+            background: #fdfdfd;
+            border: 1px solid rgba(0, 0, 0, 0.14);
+            border-radius: 8px;
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+        }
+
+        .win-actions-menu.open { display: flex; }
+
+        .win-action {
+            padding: 9px 10px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #1a1a1a;
+            font-family: inherit;
+            font-size: 12.5px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .win-action:hover { background: rgba(0, 120, 212, 0.12); }
+        .win-action:active { background: rgba(0, 120, 212, 0.22); }
 
         .win-body {
             flex: 1 1 auto;
@@ -378,6 +479,11 @@
         /* Prevent text selection flicker anywhere while dragging a window. */
         body.dragging,
         body.dragging * { user-select: none !important; }
+
+        /* An iframe is a separate browsing context that would swallow the
+           mousemove events a drag relies on. Disable its hit-testing only
+           while dragging, so move/rotate keeps tracking over embedded apps. */
+        body.dragging iframe { pointer-events: none; }
 
         /* --- demo app bodies --- */
         .app-notepad {
@@ -475,6 +581,69 @@
             width: 40px;
             height: 40px;
             gap: 4px;
+        }
+
+        /* --- embedded YouTube player --- */
+        .app-youtube {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #0f0f0f;
+        }
+
+        .yt-bar {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            background: #1c1c1c;
+        }
+
+        .yt-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 6px 8px;
+            border: 1px solid #3a3a3a;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .yt-input::placeholder { color: #888; }
+        .yt-input.yt-error { border-color: #e81123; }
+
+        .yt-load {
+            flex: 0 0 auto;
+            padding: 6px 14px;
+            border: 0;
+            border-radius: 6px;
+            background: #cc0000;
+            color: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+
+        .yt-load:hover { background: #e60000; }
+        .yt-load:active { background: #b00000; }
+
+        .yt-stage {
+            flex: 1 1 auto;
+            position: relative;
+        }
+
+        .yt-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
         }
     </style>
 
