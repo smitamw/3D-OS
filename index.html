@@ -351,6 +351,15 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* "3D window" mode: stop flattening/clipping so children with a
+           translateZ (e.g. Minesweeper flags) protrude in the real camera's
+           perspective. Only panes whose app sets threeD:true get this. */
+        .win.win-3d,
+        .win.win-3d .win-body {
+            overflow: visible;
+            transform-style: preserve-3d;
+        }
+
         .win-titlebar {
             flex: 0 0 40px;
             display: flex;
@@ -644,6 +653,147 @@
             height: 100%;
             border: 0;
             display: block;
+        }
+
+        /* --- 3D Minesweeper ---
+           The container chain is preserve-3d so a flagged cell's flag can
+           protrude along the board normal. Generous padding keeps the board
+           inset, clear of the title bar and the corner rotate-handles. */
+        .app-minesweeper {
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 30px 30px;
+            background: #c0c0c0;
+            transform-style: preserve-3d;
+            font-family: "Segoe UI", system-ui, sans-serif;
+            user-select: none;
+        }
+
+        .ms-header {
+            flex: 0 0 auto;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: #c0c0c0;
+            border: 3px solid;
+            border-color: #7d7d7d #fff #fff #7d7d7d; /* inset bezel */
+        }
+
+        .ms-counter,
+        .ms-timer {
+            min-width: 52px;
+            padding: 2px 4px;
+            background: #000;
+            color: #ff2d2d;
+            font-family: "Consolas", monospace;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .ms-reset {
+            width: 34px;
+            height: 34px;
+            border: 3px solid;
+            border-color: #fff #7d7d7d #7d7d7d #fff; /* raised bezel */
+            background: #c0c0c0;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .ms-reset:active {
+            border-color: #7d7d7d #fff #fff #7d7d7d;
+        }
+
+        .ms-board {
+            flex: 0 0 auto;
+            display: grid;
+            grid-template-columns: repeat(var(--ms-cols), 24px);
+            grid-auto-rows: 24px;
+            border: 3px solid;
+            border-color: #7d7d7d #fff #fff #7d7d7d;
+            transform-style: preserve-3d;
+        }
+
+        .ms-cell {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            margin: 0;
+            padding: 0;
+            border: 3px solid;
+            border-color: #fff #7d7d7d #7d7d7d #fff; /* raised (covered) */
+            background: #c0c0c0;
+            font-family: "Consolas", monospace;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transform-style: preserve-3d;
+        }
+
+        .ms-cell.revealed {
+            border: 1px solid #9a9a9a;
+            background: #c8c8c8;
+            cursor: default;
+        }
+
+        .ms-cell.mine { background: #c0c0c0; }
+        .ms-cell.mine-hit { background: #e81123; }
+
+        /* classic number colors */
+        .ms-cell[data-n="1"] { color: #0000ff; }
+        .ms-cell[data-n="2"] { color: #008100; }
+        .ms-cell[data-n="3"] { color: #ff0000; }
+        .ms-cell[data-n="4"] { color: #000083; }
+        .ms-cell[data-n="5"] { color: #810500; }
+        .ms-cell[data-n="6"] { color: #008284; }
+        .ms-cell[data-n="7"] { color: #000000; }
+        .ms-cell[data-n="8"] { color: #808080; }
+
+        /* The flag that sticks up out of the board: a pole raised along the
+           board normal (rotateX, anchored at its base) topped by a pennant. */
+        .ms-flag {
+            position: absolute;
+            left: 50%;
+            bottom: 4px;
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            pointer-events: none;
+        }
+
+        .ms-flag-pole {
+            position: absolute;
+            left: -1px;
+            bottom: 0;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(#444, #111);
+            transform-origin: center bottom;
+            transform: rotateX(-90deg); /* stand the pole out of the board */
+        }
+
+        .ms-flag-pennant {
+            position: absolute;
+            left: 1px;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 11px solid #e81123;
+            transform-origin: left bottom;
+            /* lift to the top of the pole, then face the viewer */
+            transform: rotateX(-90deg) translateY(-9px);
         }
     </style>
 

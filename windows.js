@@ -15,6 +15,7 @@ const FACE_GAP = 1;        // local px separation so the faces never z-fight
 function buildFace(app, { beginMove, beginRotate, onClose, actions }) {
     const root = document.createElement('div');
     root.className = 'win';
+    if (app.threeD) root.classList.add('win-3d'); // un-flatten this pane so 3D content protrudes
     root.innerHTML = `
         <div class="win-titlebar">
             <button class="win-cube" type="button" title="Actions" aria-label="Actions">
